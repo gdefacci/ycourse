@@ -1,6 +1,9 @@
 package yoox.course
 
-import scala.language.higherKinds 
+import scala.language.higherKinds
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
 
 /**
  * Applicative programming with effects
@@ -14,10 +17,10 @@ trait Applicative[F[_]] extends Functor[F] { self =>
   def apply[A,B](v:F[A])(f:F[A => B]):F[B]
   
   def apply2[A,B,C](a:F[A], b:F[B])(f:F[(A,B) => C]):F[C] = 
-    apply(a)(apply(b)( map(f)( (f:(A,B) => C) => b => a => f(a,b)) ))
+    apply(b)(apply(a)( map(f)( (f:(A,B) => C) => a => b => f(a,b)) ))
   
   def apply3[A,B,C,D](a:F[A], b:F[B], c:F[C])(f:F[(A,B,C) => D]):F[D] = 
-    apply(a)(apply(b)(apply(c)( map(f)( (f:(A,B,C) => D) => c => b => a => f(a,b,c)) )))
+    apply(c)(apply(b)(apply(a)( map(f)( (f:(A,B,C) => D) => a => b => c => f(a,b,c)) )))
   
   def tuple2[A,B](a:F[A], b:F[B]):F[(A,B)] = 
     map2(a,b)((a,b) => a -> b)
@@ -25,10 +28,10 @@ trait Applicative[F[_]] extends Functor[F] { self =>
   def map[A,B](v:F[A])(f:A => B):F[B] = apply(v)(pure(f))
   
   def map2[A,B,C](a:F[A], b:F[B])(f1:(A, B) => C):F[C] =
-    apply(a)(map(b)((b:B) => (a:A) => f1(a,b) ))
+    apply(b)(map(a)((a:A) => (b:B) => f1(a,b) ))
   
   def map3[A,B,C,D](a:F[A], b:F[B], c:F[C])(f1:(A, B, C) => D):F[D] =
-    apply(a)(apply(b)(map(c)( c => b => a => f1(a,b,c) )))
+    apply(c)(apply(b)(map(a)( a => b => c => f1(a,b,c) )))
   
   def flip[A,B](f:F[A => B]):F[A] => F[B] = fa =>
     apply(fa)(f)
@@ -46,6 +49,8 @@ trait Applicative[F[_]] extends Functor[F] { self =>
 }
 
 object Applicative {
+  
+  def apply[F[_]](implicit f:Applicative[F]) = f
   
   val option:Applicative[Option] = new Applicative[Option] {
     def pure[A](a:A) = Some(a)
@@ -74,12 +79,21 @@ object Applicative {
   
   import HigherKind._
   
-  val eitherR = new Applicative[EitherR] {
+  implicit val eitherR = new Applicative[EitherR] {
     def pure[A](a:A) = Right(a)
     def apply[A,B](v:EitherR[A])(f:EitherR[A => B]):EitherR[B] = (v,f) match {
       case (Left(err), _) => Left(err)
       case (_, Left(err)) => Left(err)
       case (Right(v), Right(f)) => Right(f(v))
+    }
+  }
+  
+  implicit val scalaTry = new Applicative[Try] {
+    def pure[A](a:A) = Success(a)
+    def apply[A,B](v:Try[A])(f:Try[A => B]):Try[B] = (v,f) match {
+      case (Failure(err), _) => Failure(err)
+      case (_, Failure(err)) => Failure(err)
+      case (Success(v), Success(f)) => Success(f(v))
     }
   }
   

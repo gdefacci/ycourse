@@ -6,6 +6,17 @@ object HigherKind {
   
   type Endomorphism[T] = T => T
   
+  type Id[T] = T
+  
+  class Const[T]() {
+    type Type[X] = T
+  }
+  
+  object Const {
+    
+    def apply[T] = new Const[T]
+    
+  }
   
   
 }
