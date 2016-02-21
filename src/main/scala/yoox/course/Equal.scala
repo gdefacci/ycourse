@@ -3,6 +3,9 @@ package yoox.course
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
 import org.scalacheck.Gen.Parameters
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
 
 trait Equal[T] {
   
@@ -29,6 +32,13 @@ object Equal {
   
   implicit def option[T](implicit eq:Equal[T]) = 
     Equal[Option[T]]( (l1,l2) => if (l1.isEmpty == l2.isEmpty)  l1.zip(l2).forall { case (a,b) => eq(a,b) } else false)
+  
+  implicit def scalaTry[T](implicit eq:Equal[T]) = 
+    Equal[Try[T]]( (l1,l2) => (l1 -> l2) match {
+      case (Success(a), Success(b)) => a == b 
+      case (Failure(_), Failure(_)) => true 
+      case _ => false 
+    })
     
   implicit def eitherR[T](implicit eq:Equal[T]) =
     Equal[Either[Throwable, T]]( (l1,l2) => (l1, l2) match {

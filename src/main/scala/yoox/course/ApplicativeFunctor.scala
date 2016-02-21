@@ -97,14 +97,6 @@ object Applicative {
     }
   }
   
-  val endoMorphism = new Applicative[Endomorphism] {
-    def pure[A](a:A) = (a1:A) => a
-    def apply[A,B](v:A => A)(f:(A => B) => (A => B)):B  => B = { b => 
-      b
-    }
-    
-  }
-  
   def monoid[M](implicit m:Monoid[M]):Applicative[({ type Type[T] = M  })#Type] = new Applicative[({ type Type[T] = M })#Type] {
    def apply[A, B](v: M)(f: M): M = m.append(v, f)
    def pure[A](a: A): M = m.zero 

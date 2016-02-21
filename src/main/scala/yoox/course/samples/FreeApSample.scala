@@ -1,8 +1,15 @@
-package yoox.course
+package yoox.course.samples
 
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+import scala.Left
+import scala.Right
+import yoox.course.Applicative
+import yoox.course.FreeAp
+import yoox.course.HigherKind
+import yoox.course.NaturalTransformation
+import java.math.BigDecimal
 
 sealed trait Property[T] {
   def name: String
@@ -77,21 +84,24 @@ object PropertyMapReadInterpreter { intepreter =>
   
   case class Errors(errors:Seq[Throwable]) extends Exception(errors.map(_.getMessage).mkString("\n"))
 
+  private def getValue[T](mp:Map[String, Any], name:String):Try[T] =
+    Try(mp(name).asInstanceOf[T])
+  
   def apply[T](mapping:FreeProperty[T], map:Map[String, Any]):Try[T] = {
     mapping.foldMap(new NaturalTransformation[Property, Try] {
       def apply[T](i: Property[T]): Try[T] = {
         i match {
-          case Integer(name, f) => Try(f( map(name).asInstanceOf[Int] ))
-          case Real(name, f) => Try(f( map(name).asInstanceOf[BigDecimal] ))
-          case Text(name, f) => Try(f( map(name).asInstanceOf[String] ))
-          case Bool(name, f) => Try(f( map(name).asInstanceOf[Boolean] ))
-          case Struct(name, f) => 
-            Try(map(name).asInstanceOf[Map[String,Any]]).flatMap { v =>
+          case Integer(name, f) => getValue[Int](map, name).map(f)
+          case Real(name, f) => getValue[BigDecimal](map, name).map(f) 
+          case Text(name, f) => getValue[String](map, name).map(f) 
+          case Bool(name, f) => getValue[Boolean](map, name).map(f) 
+          case Struct(name, f) =>
+            getValue[Map[String,Any]](map, name).flatMap { v =>
               intepreter(f, v)              
             }
             
           case Choice(name, options) => 
-            Try(map(name).asInstanceOf[Map[String,Any]]).flatMap { mapEntry =>
+            getValue[Map[String,Any]](map, name).flatMap { mapEntry =>
               options.foldLeft(Left(Nil):Either[List[Throwable], T]) { (acc,prop) =>
                 acc match {
                   case Left(errs) => intepreter(prop, mapEntry) match {
@@ -136,7 +146,7 @@ object PropertyDocInterpreter { intepreter =>
           case Struct(name, f) => 
             List(s"${pad(name)}: {") ++ intepreter(f, indent+1) ++ List("}")
           case Choice(name, options) => 
-            List(s"${pad(name)}:choice(") ++ options.zipWithIndex.flatMap {  case (f,idx) => s"  case$idx" +: intepreter(f, indent+2) } ++ List(")")
+            List(s"${pad(name)}:choice(") ++ options.zipWithIndex.flatMap {  case (f,idx) => s"  case $idx:" +: intepreter(f, indent+2) } ++ List(")")
         }).map( indentStr + _ )
       }
     })

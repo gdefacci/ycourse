@@ -1,9 +1,12 @@
-package yoox.course
+package yoox.course.samples
 
-import scala.language.higherKinds
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+import scala.Left
+import scala.Right
+
+import scala.language.higherKinds
 
 trait Validator[R[_]] {
   

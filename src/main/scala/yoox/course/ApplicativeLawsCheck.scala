@@ -3,8 +3,11 @@ package yoox.course
 import org.scalacheck.Properties
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
-
 import scala.language.higherKinds
+import scala.util.Try
+import org.scalacheck.Gen
+import scala.util.Success
+import scala.util.Failure
 
 class ApplicativeLawsCheck[F[_],A,B](app:Applicative[F])(
     implicit arbFA:Arbitrary[F[A]],
@@ -32,18 +35,26 @@ class ApplicativeLawsCheck[F[_],A,B](app:Applicative[F])(
 
 object ApplicativeLawsCheckMain extends App {
   
+  def successGen[T](implicit gen:Arbitrary[T]):Gen[Try[T]] = gen.arbitrary.map( t => Success(t))
+  def failureGen[T](implicit gen:Arbitrary[T]):Gen[Try[T]] = gen.arbitrary.map( t => Failure(new java.lang.Exception("")))
+  implicit def tryGen[T](implicit gen:Arbitrary[T]):Arbitrary[Try[T]] = Arbitrary( Gen.oneOf(successGen[T], failureGen[T]) )
+  
 	new FunctorLawsCheck[Option, Int, String, Boolean](Applicative.option).check
+	new ApplicativeLawsCheck[Option, Int, String](Applicative.option).check
   new FunctorLawsCheck[List, Int, String, Boolean](Applicative.list).check
+  new ApplicativeLawsCheck[List, Int, String](Applicative.list).check
   new FunctorLawsCheck[HigherKind.EitherR, Int, String, Boolean](Applicative.eitherR).check
-  new FunctorLawsCheck[HigherKind.Endomorphism, Int, String, Boolean](Applicative.endoMorphism).check
-  //new FunctorLawsCheck[List, Int, String, Boolean](Applicative.listNonApplicative).check
- 
+  new ApplicativeLawsCheck[HigherKind.EitherR, Int, String](Applicative.eitherR).check
+
+  new FunctorLawsCheck[Try, Int, String, Boolean](Applicative.scalaTry).check
+  new ApplicativeLawsCheck[Try, Int, String](Applicative.scalaTry).check
+
   {
 	  implicit val l = Monoid.list[Int]
-	  val app:Applicative[({ type Type[T] = List[Int] })#Type] = Applicative.monoid[List[Int]]
-    new FunctorLawsCheck[({ type Type[T] = List[Int] })#Type, Long, String, Boolean]( Applicative.monoid[List[Int]] )
+	  val app:Applicative[HigherKind.Const[List[Int]]#Type] = Applicative.monoid[List[Int]]
+    new FunctorLawsCheck[HigherKind.Const[List[Int]]#Type, Long, String, Boolean]( Applicative.monoid[List[Int]] ).check
+    new ApplicativeLawsCheck[HigherKind.Const[List[Int]]#Type, Long, String]( Applicative.monoid[List[Int]] ).check
     
-    println( app.map2[Int,String,List[Int]](List(1,2,3), List(1))( ((a:Int, b:String) => Nil )))
   }
   
 }
