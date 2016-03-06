@@ -12,7 +12,7 @@ object ReaderSample extends App {
          a + b
        }
     
-    println(calculate.run(4).value)
+    println(calculate.run(4))
     
   }
   

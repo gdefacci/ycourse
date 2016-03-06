@@ -17,10 +17,10 @@ case class Kleisli[F[_],A,B](val run:A => F[B])(implicit val monad:Monad[F]) {
 object Kleisli {
   
   
-  type Reader[E, A] = Kleisli[Identity, E, A]
+  type Reader[E, A] = Kleisli[HigherKind.Id, E, A]
   
   object Reader {
-    def apply[E, A](f: E => A): Reader[E, A] = new Kleisli[Identity, E, A](f.andThen( new Identity(_) ))
+    def apply[E, A](f: E => A): Reader[E, A] = new Kleisli[HigherKind.Id, E, A](f)
   }
   
 }

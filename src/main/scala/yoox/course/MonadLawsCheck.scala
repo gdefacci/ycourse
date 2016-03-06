@@ -36,6 +36,6 @@ object MonadLawsCheckMain extends App {
   new MonadLawsCheck[List,Int,String,Boolean]("List").check
   new MonadLawsCheck[HigherKind.State[Int]#Type,Int,String,Boolean]("State").check
   new MonadLawsCheck[HigherKind.Reader[Int]#Type,Int,String,Boolean]("Reader").check
-  new MonadLawsCheck[Identity,Int,String,Boolean]("Identity").check
+  new MonadLawsCheck[HigherKind.Id,Int,String,Boolean]("Identity").check
   
 }

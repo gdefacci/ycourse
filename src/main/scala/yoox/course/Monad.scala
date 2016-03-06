@@ -38,8 +38,8 @@ object Monad {
     def flatMap[A,B](fa:ReaderMonad[C,A])(f:A => ReaderMonad[C,B]):ReaderMonad[C, B] = fa.flatMap(f)
   }
 
-  implicit def identityMonad = new Monad[Identity] {
-    def pure[A](a:A) = new Identity[A](a)
-    def flatMap[A,B](fa:Identity[A])(f:A => Identity[B]):Identity[B] = f(fa.value)
+  implicit def identityMonad = new Monad[HigherKind.Id] {
+    def pure[A](a:A) = a
+    def flatMap[A,B](fa:A)(f:A => B):B = f(fa)
   }
 }
