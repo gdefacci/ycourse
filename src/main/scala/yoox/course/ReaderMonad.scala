@@ -14,6 +14,10 @@ case class ReaderMonad[C, A](run: C => A) {
 }
 
 object ReaderMonad {
+  def const[C,A](a:A) = ReaderMonad[C,A](c => a)
+  
+  def nop[C] = ReaderMonad[C,Unit](c => ())
+  
   implicit def arbitraryReaderMonad[C, A](implicit arbA: Arbitrary[A]) = {
     Arbitrary(for {
       a <- arbA.arbitrary
